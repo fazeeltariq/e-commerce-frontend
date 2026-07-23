@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
-
 import { 
   Heart, 
   ShoppingBag, 
@@ -46,7 +45,6 @@ const WishlistPage = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -70,7 +68,6 @@ const WishlistPage = () => {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -94,7 +91,6 @@ const WishlistPage = () => {
             </Link>
           </div>
         </div>
-       
       </div>
     );
   }
@@ -222,8 +218,6 @@ const WishlistPage = () => {
           </div>
         </div>
       </div>
-
-    
     </div>
   );
 };

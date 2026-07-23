@@ -58,7 +58,6 @@ const OrderDetailPage = () => {
             </div>
           </div>
         </div>
-      
       </div>
     );
   }
@@ -79,7 +78,6 @@ const OrderDetailPage = () => {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -255,8 +253,6 @@ const OrderDetailPage = () => {
           </div>
         </div>
       </div>
-
-    
     </div>
   );
 };

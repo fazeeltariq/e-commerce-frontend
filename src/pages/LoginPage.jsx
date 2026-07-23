@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -10,19 +10,23 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const validate = () => {
     const newErrors = {};
-    if (!email) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Enter a valid email';
+    if (!email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Please enter a valid email address';
     if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setServerError('');
+    
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -30,11 +34,24 @@ const LoginPage = () => {
     }
     setErrors({});
     setLoading(true);
+    
     try {
       await login(email, password);
-      navigate('/');
+      // ✅ Use replace: true to prevent going back to login
+      navigate('/', { replace: true });
     } catch (error) {
-      // Error handled in context
+      const status = error.response?.status;
+      const message = error.response?.data?.message || 'Something went wrong. Please try again.';
+      
+      if (status === 401) {
+        setServerError('Invalid email or password. Please try again.');
+      } else if (status === 400) {
+        setServerError(message);
+      } else if (status === 404) {
+        setServerError('Account not found. Please check your email or sign up.');
+      } else {
+        setServerError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,6 +74,21 @@ const LoginPage = () => {
 
           {/* Form Card */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-black/5">
+            {/* Server Error Alert */}
+            <AnimatePresence>
+              {serverError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-5 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5"
+                >
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-600">{serverError}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
@@ -68,7 +100,11 @@ const LoginPage = () => {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                      if (serverError) setServerError('');
+                    }}
                     className={`w-full pl-12 pr-4 py-3 bg-[#F5F5F5] border ${
                       errors.email ? 'border-red-500' : 'border-transparent'
                     } rounded-xl focus:outline-none focus:border-black transition-all duration-200 text-sm`}
@@ -77,7 +113,14 @@ const LoginPage = () => {
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-xs text-red-500 mt-1.5">{errors.email}</p>
+                  <motion.p 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-red-500 mt-1.5 flex items-center gap-1"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.email}
+                  </motion.p>
                 )}
               </div>
 
@@ -96,7 +139,11 @@ const LoginPage = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors({ ...errors, password: '' });
+                      if (serverError) setServerError('');
+                    }}
                     className={`w-full pl-12 pr-12 py-3 bg-[#F5F5F5] border ${
                       errors.password ? 'border-red-500' : 'border-transparent'
                     } rounded-xl focus:outline-none focus:border-black transition-all duration-200 text-sm`}
@@ -112,7 +159,14 @@ const LoginPage = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-xs text-red-500 mt-1.5">{errors.password}</p>
+                  <motion.p 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-red-500 mt-1.5 flex items-center gap-1"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.password}
+                  </motion.p>
                 )}
               </div>
 
@@ -145,13 +199,9 @@ const LoginPage = () => {
                 Create an account
               </Link>
             </p>
-
-            
           </div>
         </motion.div>
       </div>
-
-    
     </div>
   );
 };

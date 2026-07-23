@@ -12,8 +12,7 @@ import {
   AlertCircle,
   Calendar,
   ShoppingBag,
-  CreditCard,
-  MapPin
+  CreditCard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -67,7 +66,6 @@ const OrdersPage = () => {
             </div>
           </div>
         </div>
-     
       </div>
     );
   }
@@ -89,7 +87,6 @@ const OrdersPage = () => {
             </button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -113,7 +110,6 @@ const OrdersPage = () => {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -274,8 +270,6 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-
-    
     </div>
   );
 };

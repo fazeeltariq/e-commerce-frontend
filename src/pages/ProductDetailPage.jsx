@@ -5,7 +5,6 @@ import { productApi } from '../api';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../context/AuthContext';
-
 import { 
   ShoppingBag, 
   Heart, 
@@ -118,77 +117,76 @@ const ProductDetailPage = () => {
     return product.images[0]?.url || null;
   };
 
-  // Rating stars component
   // Rating stars component - YELLOW STARS
-const RatingStars = ({ rating, onRatingChange, hoverRating, onHoverChange, size = 'large' }) => {
-  const starSize = size === 'large' ? 'w-8 h-8' : 'w-5 h-5';
-  const gap = size === 'large' ? 'gap-2' : 'gap-1';
-  
-  return (
-    <div className={`flex ${gap}`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onRatingChange(star)}
-          onMouseEnter={() => onHoverChange(star)}
-          onMouseLeave={() => onHoverChange(0)}
-          className="focus:outline-none transition-transform hover:scale-110"
-        >
-          <Star 
-            className={`${starSize} ${
-              star <= (hoverRating || rating) 
-                ? 'fill-yellow-400 text-yellow-400' 
-                : 'text-gray-300'
-            } transition-colors duration-200`}
-          />
-        </button>
-      ))}
-    </div>
-  );
-};
-  // Review card component
- // Review card component - YELLOW STARS
-const ReviewCard = ({ review }) => {
-  const getInitials = (name) => {
-    return name?.charAt(0)?.toUpperCase() || 'U';
+  const RatingStars = ({ rating, onRatingChange, hoverRating, onHoverChange, size = 'large' }) => {
+    const starSize = size === 'large' ? 'w-8 h-8' : 'w-5 h-5';
+    const gap = size === 'large' ? 'gap-2' : 'gap-1';
+    
+    return (
+      <div className={`flex ${gap}`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange(star)}
+            onMouseEnter={() => onHoverChange(star)}
+            onMouseLeave={() => onHoverChange(0)}
+            className="focus:outline-none transition-transform hover:scale-110"
+          >
+            <Star 
+              className={`${starSize} ${
+                star <= (hoverRating || rating) 
+                  ? 'fill-yellow-400 text-yellow-400' 
+                  : 'text-gray-300'
+              } transition-colors duration-200`}
+            />
+          </button>
+        ))}
+      </div>
+    );
   };
 
-  return (
-    <div className="border-b border-gray-100 last:border-0 py-5">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center shrink-0">
-          <span className="text-sm font-medium text-black/60">
-            {getInitials(review.username)}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-medium text-black text-sm">{review.username}</span>
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  className={`w-3.5 h-3.5 ${
-                    i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'
-                  }`} 
-                />
-              ))}
-            </div>
+  // Review card component - YELLOW STARS
+  const ReviewCard = ({ review }) => {
+    const getInitials = (name) => {
+      return name?.charAt(0)?.toUpperCase() || 'U';
+    };
+
+    return (
+      <div className="border-b border-gray-100 last:border-0 py-5">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center shrink-0">
+            <span className="text-sm font-medium text-black/60">
+              {getInitials(review.username)}
+            </span>
           </div>
-          <p className="text-sm text-black/60 mt-1.5">{review.comment}</p>
-          <p className="text-xs text-black/30 mt-1.5">
-            {new Date(review.createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-medium text-black text-sm">{review.username}</span>
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`w-3.5 h-3.5 ${
+                      i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'
+                    }`} 
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-black/60 mt-1.5">{review.comment}</p>
+            <p className="text-xs text-black/30 mt-1.5">
+              {new Date(review.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   if (isLoading) {
     return (
@@ -204,7 +202,6 @@ const ReviewCard = ({ review }) => {
             </div>
           </div>
         </div>
-     
       </div>
     );
   }
@@ -221,7 +218,6 @@ const ReviewCard = ({ review }) => {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -268,24 +264,25 @@ const ReviewCard = ({ review }) => {
 
               {/* Rating Summary */}
               {product.averageRating > 0 && (
-  <div className="flex items-center gap-2 mt-1">
-    <div className="flex items-center gap-0.5">
-      {[...Array(5)].map((_, i) => (
-        <Star 
-          key={i} 
-          className={`w-4 h-4 ${
-            i < Math.round(product.averageRating) 
-              ? 'fill-yellow-400 text-yellow-400' 
-              : 'text-gray-200'
-          }`} 
-        />
-      ))}
-    </div>
-    <span className="text-sm text-black/60">
-      {product.averageRating} out of 5
-    </span>
-  </div>
-)}
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-4 h-4 ${
+                          i < Math.round(product.averageRating) 
+                            ? 'fill-yellow-400 text-yellow-400' 
+                            : 'text-gray-200'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-black/60">
+                    {product.averageRating} out of 5
+                  </span>
+                </div>
+              )}
+              
               {/* Price */}
               <div className="mt-4">
                 <span className="text-3xl font-bold text-black">${product.price}</span>
@@ -406,7 +403,7 @@ const ReviewCard = ({ review }) => {
                           key={i} 
                           className={`w-4 h-4 ${
                             i < Math.round(product.averageRating) 
-                              ? 'fill-black text-black' 
+                              ? 'fill-yellow-400 text-yellow-400' 
                               : 'text-gray-200'
                           }`} 
                         />
@@ -518,8 +515,6 @@ const ReviewCard = ({ review }) => {
           </div>
         </div>
       </div>
-
-   
     </div>
   );
 };

@@ -78,24 +78,24 @@ const Navbar = () => {
         }`}
       >
         <div className="container-custom">
-          <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group shrink-0">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group shrink-0">
               <motion.div 
                 whileHover={{ rotate: -10, scale: 1.05 }}
-                className="w-9 h-9 bg-black rounded-xl flex items-center justify-center"
+                className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-black rounded-xl flex items-center justify-center"
               >
-                <span className="text-white font-bold text-lg">B</span>
+                <span className="text-white font-bold text-sm sm:text-base md:text-lg">B</span>
               </motion.div>
-              <span className="text-xl font-bold tracking-tight">
+              <span className="text-base sm:text-lg md:text-xl font-bold tracking-tight">
                 <span className="text-black">Byte</span>
                 <span className="text-black/50">Buy</span>
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-8">
-              {/* Categories Dropdown - Now linked */}
+            <div className="hidden md:flex items-center gap-4 lg:gap-8">
+              {/* Categories Dropdown */}
               <div className="relative group">
                 <button className="flex items-center gap-1 text-sm font-medium text-black/60 hover:text-black transition-colors">
                   Categories
@@ -128,58 +128,55 @@ const Navbar = () => {
                 <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-black transition-all duration-300 group-hover:w-full" />
               </Link>
 
-              {/* Search Button */}
+              {/* Search Button - Opens overlay */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
-                className="text-black/60 hover:text-black transition-colors p-2 hover:bg-gray-50 rounded-lg"
+                className="text-black/60 hover:text-black transition-colors p-1.5 sm:p-2 hover:bg-gray-50 rounded-lg"
                 aria-label="Search"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Right Icons - Wishlist & Cart */}
-              <div className="flex items-center gap-1">
-                {/* Wishlist */}
+              {/* Right Icons */}
+              <div className="flex items-center gap-0.5 sm:gap-1">
                 <Link 
                   to="/wishlist" 
-                  className="relative p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                  className="relative p-1.5 sm:p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
                   aria-label="Wishlist"
                 >
-                  <Heart className="w-5 h-5" />
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-medium">
                       {wishlistCount}
                     </span>
                   )}
                 </Link>
 
-                {/* Cart */}
                 <Link 
                   to="/cart" 
-                  className="relative p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                  className="relative p-1.5 sm:p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
                   aria-label="Cart"
                 >
-                  <ShoppingBag className="w-5 h-5" />
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   {cartCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-medium">
                       {cartCount}
                     </span>
                   )}
                 </Link>
 
-                {/* Profile */}
                 {isAuthenticated ? (
                   <div className="relative" ref={profileRef}>
                     <button
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      className="flex items-center gap-2 p-1.5 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                      className="flex items-center gap-1.5 p-1.5 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
                       aria-label="Profile"
                     >
-                      <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center border border-black/10">
-                        <User className="w-4 h-4 text-black/60" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/5 flex items-center justify-center border border-black/10">
+                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60" />
                       </div>
-                      <span className="text-sm font-medium hidden lg:block">{user?.name?.split(' ')[0]}</span>
-                      <ChevronDown className="w-4 h-4 hidden lg:block" />
+                      <span className="text-xs sm:text-sm font-medium hidden lg:block">{user?.name?.split(' ')[0]}</span>
+                      <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 hidden lg:block" />
                     </button>
 
                     <AnimatePresence>
@@ -189,10 +186,10 @@ const Navbar = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.2 }}
-                          className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2"
+                          className="absolute right-0 mt-2 w-56 sm:w-64 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2"
                         >
                           <div className="px-4 py-3 border-b border-gray-100">
-                            <p className="font-medium text-black">{user?.name}</p>
+                            <p className="font-medium text-black text-sm">{user?.name}</p>
                             <p className="text-xs text-black/40">{user?.email}</p>
                             {user?.role === 'admin' && (
                               <span className="inline-block mt-1 px-2 py-0.5 bg-black/5 text-black/60 text-xs rounded-full">
@@ -200,26 +197,24 @@ const Navbar = () => {
                               </span>
                             )}
                           </div>
-                          <Link to="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                          <Link to="/profile" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
                             <User className="w-4 h-4" />
                             Profile
                           </Link>
-                          <Link to="/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                          <Link to="/orders" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
                             <ShoppingBag className="w-4 h-4" />
                             Orders
                           </Link>
                           {user?.role === 'admin' && (
-                            <>
-                              <Link to="/admin/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
-                                <User className="w-4 h-4" />
-                                Dashboard
-                              </Link>
-                            </>
+                            <Link to="/admin/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
+                              <User className="w-4 h-4" />
+                              Dashboard
+                            </Link>
                           )}
                           <div className="border-t border-gray-100 my-1" />
                           <button
                             onClick={handleLogout}
-                            className="flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors"
                           >
                             <LogOut className="w-4 h-4" />
                             Logout
@@ -229,16 +224,16 @@ const Navbar = () => {
                     </AnimatePresence>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <Link 
                       to="/login" 
-                      className="text-sm font-medium text-black/60 hover:text-black transition-colors px-3 py-2 hover:bg-gray-50 rounded-lg"
+                      className="text-xs sm:text-sm font-medium text-black/60 hover:text-black transition-colors px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-50 rounded-lg"
                     >
                       Sign In
                     </Link>
                     <Link 
                       to="/register" 
-                      className="bg-black text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-black/80 transition-colors"
+                      className="bg-black text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-black/80 transition-colors"
                     >
                       Get Started
                     </Link>
@@ -248,13 +243,24 @@ const Navbar = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              className="md:hidden text-black p-2 hover:bg-gray-50 rounded-lg"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="flex items-center gap-1 md:hidden">
+              {/* Mobile Search Button */}
+              <button 
+                onClick={() => setIsSearchOpen(true)}
+                className="text-black/60 hover:text-black transition-colors p-2 hover:bg-gray-50 rounded-lg"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              
+              <button
+                className="text-black p-2 hover:bg-gray-50 rounded-lg"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -268,18 +274,7 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
               className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100/20"
             >
-              <div className="container-custom py-6 space-y-4">
-                <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
-                  <Search className="w-5 h-5 text-black/40" />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    className="flex-1 bg-transparent outline-none text-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </form>
-
+              <div className="container-custom py-4 space-y-3">
                 <Link to="/products" className="block py-2 text-sm font-medium hover:text-black transition-colors">
                   Products
                 </Link>
@@ -292,18 +287,18 @@ const Navbar = () => {
                       <Link 
                         key={category._id}
                         to={`/products?category=${category._id}`}
-                        className="block py-2 text-sm font-medium hover:text-black transition-colors pl-2"
+                        className="block py-1.5 text-sm font-medium hover:text-black transition-colors pl-2"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         {category.name}
                       </Link>
                     ))
                   ) : (
-                    <span className="block py-2 text-sm text-black/40 pl-2">No categories</span>
+                    <span className="block py-1.5 text-sm text-black/40 pl-2">No categories</span>
                   )}
                 </div>
                 
-                <div className="border-t border-gray-100 py-4">
+                <div className="border-t border-gray-100 py-3">
                   {isAuthenticated ? (
                     <>
                       <Link to="/profile" className="block py-2 text-sm font-medium hover:text-black transition-colors">
@@ -312,12 +307,14 @@ const Navbar = () => {
                       <Link to="/orders" className="block py-2 text-sm font-medium hover:text-black transition-colors">
                         Orders
                       </Link>
-                      <Link to="/cart" className="block py-2 text-sm font-medium hover:text-black transition-colors">
-                        Cart ({cartCount})
-                      </Link>
-                      <Link to="/wishlist" className="block py-2 text-sm font-medium hover:text-black transition-colors">
-                        Wishlist ({wishlistCount})
-                      </Link>
+                      <div className="flex items-center gap-4 py-2">
+                        <Link to="/cart" className="text-sm font-medium hover:text-black transition-colors flex items-center gap-1">
+                          Cart ({cartCount})
+                        </Link>
+                        <Link to="/wishlist" className="text-sm font-medium hover:text-black transition-colors flex items-center gap-1">
+                          Wishlist ({wishlistCount})
+                        </Link>
+                      </div>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
@@ -342,14 +339,14 @@ const Navbar = () => {
         </AnimatePresence>
       </motion.nav>
 
-      {/* Search Overlay */}
+      {/* Search Overlay - Full screen on mobile */}
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-24"
+            className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-16 sm:pt-24"
             onClick={() => setIsSearchOpen(false)}
           >
             <div className="w-full max-w-3xl px-4" onClick={(e) => e.stopPropagation()}>
@@ -359,12 +356,12 @@ const Navbar = () => {
                 exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <form onSubmit={handleSearch} className="flex items-center gap-4 border-b-2 border-black pb-4">
-                  <Search className="w-6 h-6 text-black/40" />
+                <form onSubmit={handleSearch} className="flex items-center gap-3 sm:gap-4 border-b-2 border-black pb-3 sm:pb-4">
+                  <Search className="w-5 h-5 sm:w-6 sm:h-6 text-black/40" />
                   <input
                     type="text"
-                    placeholder="Search for premium products..."
-                    className="flex-1 bg-transparent text-lg outline-none placeholder:text-black/40"
+                    placeholder="Search for products..."
+                    className="flex-1 bg-transparent text-base sm:text-lg outline-none placeholder:text-black/40"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
@@ -373,10 +370,10 @@ const Navbar = () => {
                     onClick={() => setIsSearchOpen(false)}
                     className="text-black/40 hover:text-black transition-colors p-2"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </form>
-                <div className="mt-8">
+                <div className="mt-6">
                   <p className="text-sm text-black/40 mb-3">Popular searches:</p>
                   <div className="flex flex-wrap gap-2">
                     {['MacBook Pro', 'Sony Headphones', 'iPhone 15', 'AirPods Max', 'Samsung Galaxy'].map((term) => (
@@ -386,7 +383,7 @@ const Navbar = () => {
                           setSearchQuery(term);
                           handleSearch(new Event('submit'));
                         }}
-                        className="px-4 py-2 bg-gray-50 rounded-full text-sm hover:bg-gray-100 transition-colors"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 rounded-full text-xs sm:text-sm hover:bg-gray-100 transition-colors"
                       >
                         {term}
                       </button>
