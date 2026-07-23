@@ -1,0 +1,405 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import { useCart } from '../../../hooks/useCart';
+import { useWishlist } from '../../../hooks/useWishlist';
+import { useCategories } from '../../../hooks/useCategories';
+import { 
+  ShoppingBag, 
+  Heart, 
+  User, 
+  LogOut, 
+  LogIn, 
+  UserPlus, 
+  Menu, 
+  X, 
+  Search,
+  ChevronDown
+} from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const Navbar = () => {
+  const { user, logout, isAuthenticated } = useAuth();
+  const { totalItems: cartCount } = useCart();
+  const { totalItems: wishlistCount } = useWishlist();
+  const { categories } = useCategories();
+  const navigate = useNavigate();
+  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setIsProfileOpen(false);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${searchQuery}`);
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
+
+  return (
+    <>
+      <motion.nav 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          isScrolled 
+            ? 'bg-white/95 backdrop-blur-2xl border-b border-gray-100/20 shadow-sm' 
+            : 'bg-transparent'
+        }`}
+      >
+        <div className="container-custom">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 group shrink-0">
+              <motion.div 
+                whileHover={{ rotate: -10, scale: 1.05 }}
+                className="w-9 h-9 bg-black rounded-xl flex items-center justify-center"
+              >
+                <span className="text-white font-bold text-lg">B</span>
+              </motion.div>
+              <span className="text-xl font-bold tracking-tight">
+                <span className="text-black">Byte</span>
+                <span className="text-black/50">Buy</span>
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-6 lg:gap-8">
+              {/* Categories Dropdown - Now linked */}
+              <div className="relative group">
+                <button className="flex items-center gap-1 text-sm font-medium text-black/60 hover:text-black transition-colors">
+                  Categories
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2 invisible group-hover:visible transition-all duration-200 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                  {categories && categories.length > 0 ? (
+                    categories.map((category) => (
+                      <Link 
+                        key={category._id}
+                        to={`/products?category=${category._id}`}
+                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                      >
+                        {category.name}
+                      </Link>
+                    ))
+                  ) : (
+                    <span className="block px-4 py-2 text-sm text-black/40">
+                      No categories
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <Link 
+                to="/products" 
+                className="text-sm font-medium text-black/60 hover:text-black transition-colors relative group"
+              >
+                Products
+                <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-black transition-all duration-300 group-hover:w-full" />
+              </Link>
+
+              {/* Search Button */}
+              <button 
+                onClick={() => setIsSearchOpen(true)}
+                className="text-black/60 hover:text-black transition-colors p-2 hover:bg-gray-50 rounded-lg"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+
+              {/* Right Icons - Wishlist & Cart */}
+              <div className="flex items-center gap-1">
+                {/* Wishlist */}
+                <Link 
+                  to="/wishlist" 
+                  className="relative p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                  aria-label="Wishlist"
+                >
+                  <Heart className="w-5 h-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Cart */}
+                <Link 
+                  to="/cart" 
+                  className="relative p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                  aria-label="Cart"
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Profile */}
+                {isAuthenticated ? (
+                  <div className="relative" ref={profileRef}>
+                    <button
+                      onClick={() => setIsProfileOpen(!isProfileOpen)}
+                      className="flex items-center gap-2 p-1.5 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
+                      aria-label="Profile"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center border border-black/10">
+                        <User className="w-4 h-4 text-black/60" />
+                      </div>
+                      <span className="text-sm font-medium hidden lg:block">{user?.name?.split(' ')[0]}</span>
+                      <ChevronDown className="w-4 h-4 hidden lg:block" />
+                    </button>
+
+                    <AnimatePresence>
+                      {isProfileOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2"
+                        >
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="font-medium text-black">{user?.name}</p>
+                            <p className="text-xs text-black/40">{user?.email}</p>
+                            {user?.role === 'admin' && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-black/5 text-black/60 text-xs rounded-full">
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                          <Link to="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                            <User className="w-4 h-4" />
+                            Profile
+                          </Link>
+                          <Link to="/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                            <ShoppingBag className="w-4 h-4" />
+                            Orders
+                          </Link>
+                          {user?.role === 'admin' && (
+                            <>
+                              <Link to="/admin/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                                <User className="w-4 h-4" />
+                                Dashboard
+                              </Link>
+                            </>
+                          )}
+                          <div className="border-t border-gray-100 my-1" />
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-gray-50 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Logout
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Link 
+                      to="/login" 
+                      className="text-sm font-medium text-black/60 hover:text-black transition-colors px-3 py-2 hover:bg-gray-50 rounded-lg"
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      className="bg-black text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-black/80 transition-colors"
+                    >
+                      Get Started
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden text-black p-2 hover:bg-gray-50 rounded-lg"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100/20"
+            >
+              <div className="container-custom py-6 space-y-4">
+                <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
+                  <Search className="w-5 h-5 text-black/40" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    className="flex-1 bg-transparent outline-none text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </form>
+
+                <Link to="/products" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                  Products
+                </Link>
+                
+                {/* Mobile Categories */}
+                <div className="space-y-1">
+                  <p className="text-xs text-black/40 uppercase tracking-wider font-medium">Categories</p>
+                  {categories && categories.length > 0 ? (
+                    categories.map((category) => (
+                      <Link 
+                        key={category._id}
+                        to={`/products?category=${category._id}`}
+                        className="block py-2 text-sm font-medium hover:text-black transition-colors pl-2"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {category.name}
+                      </Link>
+                    ))
+                  ) : (
+                    <span className="block py-2 text-sm text-black/40 pl-2">No categories</span>
+                  )}
+                </div>
+                
+                <div className="border-t border-gray-100 py-4">
+                  {isAuthenticated ? (
+                    <>
+                      <Link to="/profile" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                        Profile
+                      </Link>
+                      <Link to="/orders" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                        Orders
+                      </Link>
+                      <Link to="/cart" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                        Cart ({cartCount})
+                      </Link>
+                      <Link to="/wishlist" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                        Wishlist ({wishlistCount})
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+                        Sign In
+                      </Link>
+                      <Link to="/register" className="block py-2 text-sm font-medium text-black/60 hover:text-black transition-colors">
+                        Get Started
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.nav>
+
+      {/* Search Overlay */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-24"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <div className="w-full max-w-3xl px-4" onClick={(e) => e.stopPropagation()}>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <form onSubmit={handleSearch} className="flex items-center gap-4 border-b-2 border-black pb-4">
+                  <Search className="w-6 h-6 text-black/40" />
+                  <input
+                    type="text"
+                    placeholder="Search for premium products..."
+                    className="flex-1 bg-transparent text-lg outline-none placeholder:text-black/40"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => setIsSearchOpen(false)}
+                    className="text-black/40 hover:text-black transition-colors p-2"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </form>
+                <div className="mt-8">
+                  <p className="text-sm text-black/40 mb-3">Popular searches:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {['MacBook Pro', 'Sony Headphones', 'iPhone 15', 'AirPods Max', 'Samsung Galaxy'].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => {
+                          setSearchQuery(term);
+                          handleSearch(new Event('submit'));
+                        }}
+                        className="px-4 py-2 bg-gray-50 rounded-full text-sm hover:bg-gray-100 transition-colors"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+export default Navbar;
