@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi, categoryApi } from '../../api';
+import { Link } from 'react-router-dom';
+
 import { 
   Plus, 
   Search, 
