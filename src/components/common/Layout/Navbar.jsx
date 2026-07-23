@@ -50,10 +50,23 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // ✅ Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isMenuOpen]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
     setIsProfileOpen(false);
+    setIsMenuOpen(false);
   };
 
   const handleSearch = (e) => {
@@ -80,7 +93,7 @@ const Navbar = () => {
         <div className="container-custom">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group shrink-0">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group shrink-0" onClick={() => setIsMenuOpen(false)}>
               <motion.div 
                 whileHover={{ rotate: -10, scale: 1.05 }}
                 className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-black rounded-xl flex items-center justify-center"
@@ -128,7 +141,6 @@ const Navbar = () => {
                 <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-black transition-all duration-300 group-hover:w-full" />
               </Link>
 
-              {/* Search Button - Opens overlay */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-black/60 hover:text-black transition-colors p-1.5 sm:p-2 hover:bg-gray-50 rounded-lg"
@@ -137,7 +149,6 @@ const Navbar = () => {
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Right Icons */}
               <div className="flex items-center gap-0.5 sm:gap-1">
                 <Link 
                   to="/wishlist" 
@@ -244,7 +255,6 @@ const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-1 md:hidden">
-              {/* Mobile Search Button */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-black/60 hover:text-black transition-colors p-2 hover:bg-gray-50 rounded-lg"
@@ -254,7 +264,7 @@ const Navbar = () => {
               </button>
               
               <button
-                className="text-black p-2 hover:bg-gray-50 rounded-lg"
+                className="text-black p-2 hover:bg-gray-50 rounded-lg relative z-50"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -263,83 +273,125 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+      </motion.nav>
 
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100/20"
-            >
-              <div className="container-custom py-4 space-y-3">
-                <Link to="/products" className="block py-2 text-sm font-medium hover:text-black transition-colors">
+      {/* ✅ Mobile Menu Overlay - Full screen */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 bg-white md:hidden"
+            style={{ top: '56px' }}
+          >
+            <div className="container-custom py-6 space-y-6 overflow-y-auto h-full pb-20">
+              {/* Close button at top of menu */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-black" />
+                </button>
+              </div>
+
+              {/* Navigation Links */}
+              <div className="space-y-6">
+                <Link 
+                  to="/products" 
+                  className="block text-lg font-medium hover:text-black transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   Products
                 </Link>
                 
-                {/* Mobile Categories */}
-                <div className="space-y-1">
-                  <p className="text-xs text-black/40 uppercase tracking-wider font-medium">Categories</p>
+                {/* Categories */}
+                <div className="space-y-2">
+                  <p className="text-sm text-black/40 font-medium">Categories</p>
                   {categories && categories.length > 0 ? (
                     categories.map((category) => (
                       <Link 
                         key={category._id}
                         to={`/products?category=${category._id}`}
-                        className="block py-1.5 text-sm font-medium hover:text-black transition-colors pl-2"
+                        className="block py-2 text-base hover:text-black transition-colors pl-2"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         {category.name}
                       </Link>
                     ))
                   ) : (
-                    <span className="block py-1.5 text-sm text-black/40 pl-2">No categories</span>
-                  )}
-                </div>
-                
-                <div className="border-t border-gray-100 py-3">
-                  {isAuthenticated ? (
-                    <>
-                      <Link to="/profile" className="block py-2 text-sm font-medium hover:text-black transition-colors">
-                        Profile
-                      </Link>
-                      <Link to="/orders" className="block py-2 text-sm font-medium hover:text-black transition-colors">
-                        Orders
-                      </Link>
-                      <div className="flex items-center gap-4 py-2">
-                        <Link to="/cart" className="text-sm font-medium hover:text-black transition-colors flex items-center gap-1">
-                          Cart ({cartCount})
-                        </Link>
-                        <Link to="/wishlist" className="text-sm font-medium hover:text-black transition-colors flex items-center gap-1">
-                          Wishlist ({wishlistCount})
-                        </Link>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link to="/login" className="block py-2 text-sm font-medium hover:text-black transition-colors">
-                        Sign In
-                      </Link>
-                      <Link to="/register" className="block py-2 text-sm font-medium text-black/60 hover:text-black transition-colors">
-                        Get Started
-                      </Link>
-                    </>
+                    <p className="text-sm text-black/40 pl-2">No categories</p>
                   )}
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.nav>
 
-      {/* Search Overlay - Full screen on mobile */}
+              <div className="border-t border-gray-100 pt-6">
+                {isAuthenticated ? (
+                  <div className="space-y-4">
+                    <Link 
+                      to="/profile" 
+                      className="block text-base font-medium hover:text-black transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link 
+                      to="/orders" 
+                      className="block text-base font-medium hover:text-black transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Orders
+                    </Link>
+                    <div className="flex gap-6">
+                      <Link 
+                        to="/cart" 
+                        className="text-base font-medium hover:text-black transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Cart ({cartCount})
+                      </Link>
+                      <Link 
+                        to="/wishlist" 
+                        className="text-base font-medium hover:text-black transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Wishlist ({wishlistCount})
+                      </Link>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left text-base font-medium text-red-600 hover:text-red-700 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Link 
+                      to="/login" 
+                      className="block text-base font-medium hover:text-black transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      className="block text-base font-medium text-black/60 hover:text-black transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Get Started
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Overlay */}
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
