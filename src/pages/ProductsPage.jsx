@@ -31,18 +31,43 @@ const ProductsPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const itemsPerPage = 9;
 
-  const { data: categories } = useQuery({
+  // FIX: Ensure categories is always an array
+  const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       try {
         const response = await categoryApi.getCategories();
-        return response.data || [];
+        // Check if response.data is an array, if not, try to extract it
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          // If it's an object with a categories property
+          if (Array.isArray(response.data.categories)) {
+            return response.data.categories;
+          }
+          // If it's an object with a data property
+          if (Array.isArray(response.data.data)) {
+            return response.data.data;
+          }
+          // If it's an object with other structure, try to find the first array
+          const firstArray = Object.values(response.data).find(val => Array.isArray(val));
+          if (firstArray) {
+            return firstArray;
+          }
+          // If no array found, return empty array
+          console.warn('Categories data is not an array:', response.data);
+          return [];
+        }
+        return [];
       } catch (err) {
         console.error('❌ Failed to fetch categories:', err);
         return [];
       }
     },
   });
+
+  // Ensure categories is always an array
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
 
   const { data: productsData, isLoading, refetch } = useQuery({
     queryKey: ['products', searchQuery, selectedCategory, sortBy, currentPage],
@@ -54,8 +79,13 @@ const ProductsPage = () => {
         ...(searchQuery && { search: searchQuery }),
         ...(selectedCategory && { category: selectedCategory }),
       };
-      const response = await productApi.getProducts(params);
-      return response.data;
+      try {
+        const response = await productApi.getProducts(params);
+        return response.data;
+      } catch (error) {
+        console.error('❌ Failed to fetch products:', error);
+        return { products: [], totalProducts: 0, totalPages: 1 };
+      }
     },
   });
 
@@ -92,24 +122,39 @@ const ProductsPage = () => {
     setSelectedCategory('');
     setSortBy('-createdAt');
     setCurrentPage(1);
+    setIsFilterOpen(false);
   };
 
-  const handleWishlistToggle = (e, productId) => {
+  const handleWishlistToggle = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) return;
-    if (isInWishlist(productId)) {
-      removeFromWishlist(productId);
-    } else {
-      addToWishlist(productId);
+    if (!isAuthenticated) {
+      // Optionally redirect to login or show a message
+      return;
+    }
+    try {
+      if (isInWishlist(productId)) {
+        await removeFromWishlist(productId);
+      } else {
+        await addToWishlist(productId);
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
     }
   };
 
-  const handleAddToCart = (e, productId) => {
+  const handleAddToCart = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) return;
-    addToCart({ productId, quantity: 1 });
+    if (!isAuthenticated) {
+      // Optionally redirect to login or show a message
+      return;
+    }
+    try {
+      await addToCart({ productId, quantity: 1 });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    }
   };
 
   const getImageUrl = (product) => {
@@ -123,6 +168,7 @@ const ProductsPage = () => {
     
     return (
       <motion.div
+        key={product._id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05, duration: 0.4 }}
@@ -136,8 +182,9 @@ const ProductsPage = () => {
                   src={imageUrl}
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  loading="lazy"
                   onError={(e) => {
-                    e.target.src = `https://via.placeholder.com/600x450/f0f0f0/999999?text=${product.name.charAt(0)}`;
+                    e.target.src = `https://via.placeholder.com/600x450/f0f0f0/999999?text=${encodeURIComponent(product.name.charAt(0))}`;
                   }}
                 />
               ) : (
@@ -157,6 +204,7 @@ const ProductsPage = () => {
           <button
             onClick={(e) => handleWishlistToggle(e, product._id)}
             className="absolute top-2 sm:top-3 right-2 sm:right-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm z-10"
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <Heart 
               className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
@@ -256,6 +304,7 @@ const ProductsPage = () => {
                   onKeyDown={handleKeyDown}
                   placeholder="Search products..."
                   className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black transition-colors"
+                  aria-label="Search products"
                 />
               </div>
               <button
@@ -270,6 +319,7 @@ const ProductsPage = () => {
               <button
                 onClick={() => setIsFilterOpen(true)}
                 className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-100 transition-colors"
+                aria-label="Open filters"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="sm:hidden">Filter</span>
@@ -284,6 +334,7 @@ const ProductsPage = () => {
                     setCurrentPage(1);
                   }}
                   className="appearance-none px-3 sm:px-4 py-2 sm:py-2.5 pr-7 sm:pr-10 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer focus:outline-none focus:border-black"
+                  aria-label="Sort products"
                 >
                   <option value="-createdAt">Newest</option>
                   <option value="price">Price: Low to High</option>
@@ -298,6 +349,7 @@ const ProductsPage = () => {
                 <button
                   onClick={clearFilters}
                   className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-black/40 hover:text-black transition-colors"
+                  aria-label="Clear all filters"
                 >
                   <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Clear</span>
@@ -306,6 +358,7 @@ const ProductsPage = () => {
             </div>
           </div>
 
+          {/* FIX: Added conditional check and safe mapping */}
           {categories && categories.length > 0 && (
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-8">
               <button
@@ -410,12 +463,15 @@ const ProductsPage = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="absolute left-0 top-0 bottom-0 w-[280px] sm:w-80 bg-white p-5 sm:p-6"
+              className="absolute left-0 top-0 bottom-0 w-[280px] sm:w-80 bg-white p-5 sm:p-6 overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold">Filters</h2>
-                <button onClick={() => setIsFilterOpen(false)}>
+                <button 
+                  onClick={() => setIsFilterOpen(false)}
+                  aria-label="Close filters"
+                >
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -428,6 +484,7 @@ const ProductsPage = () => {
                       onClick={() => {
                         setSelectedCategory('');
                         setCurrentPage(1);
+                        setIsFilterOpen(false);
                       }}
                       className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${
                         !selectedCategory ? 'bg-black text-white' : 'hover:bg-gray-50'
@@ -435,12 +492,14 @@ const ProductsPage = () => {
                     >
                       All
                     </button>
-                    {categories?.map((category) => (
+                    {/* FIX: Added safe mapping with Array.isArray check */}
+                    {Array.isArray(categories) && categories.map((category) => (
                       <button
                         key={category._id}
                         onClick={() => {
                           setSelectedCategory(selectedCategory === category._id ? '' : category._id);
                           setCurrentPage(1);
+                          setIsFilterOpen(false);
                         }}
                         className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${
                           selectedCategory === category._id ? 'bg-black text-white' : 'hover:bg-gray-50'
@@ -466,6 +525,7 @@ const ProductsPage = () => {
                         onClick={() => {
                           setSortBy(option.value);
                           setCurrentPage(1);
+                          setIsFilterOpen(false);
                         }}
                         className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${
                           sortBy === option.value ? 'bg-black text-white' : 'hover:bg-gray-50'
