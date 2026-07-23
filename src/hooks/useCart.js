@@ -1,13 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export const useCart = () => {
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
+  // ✅ Only fetch cart if user is authenticated
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'],
     queryFn: cartApi.getCart,
     staleTime: 1000 * 30,
+    enabled: isAuthenticated,  // ✅ THIS IS THE FIX
     select: (data) => data.data,
   });
 
@@ -15,10 +19,8 @@ export const useCart = () => {
     mutationFn: ({ productId, quantity }) => cartApi.addToCart(productId, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries(['cart']);
-      // ✅ No toast notification
     },
     onError: (error) => {
-      // ✅ No toast notification
       console.error('Failed to add to cart:', error);
     },
   });
@@ -27,7 +29,6 @@ export const useCart = () => {
     mutationFn: ({ productId, quantity }) => cartApi.updateQuantity(productId, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries(['cart']);
-      // ✅ No toast notification
     },
     onError: (error) => {
       console.error('Failed to update cart:', error);
@@ -38,7 +39,6 @@ export const useCart = () => {
     mutationFn: (productId) => cartApi.removeFromCart(productId),
     onSuccess: () => {
       queryClient.invalidateQueries(['cart']);
-      // ✅ No toast notification
     },
     onError: (error) => {
       console.error('Failed to remove from cart:', error);
@@ -49,7 +49,6 @@ export const useCart = () => {
     mutationFn: cartApi.clearCart,
     onSuccess: () => {
       queryClient.invalidateQueries(['cart']);
-      // ✅ No toast notification
     },
     onError: (error) => {
       console.error('Failed to clear cart:', error);

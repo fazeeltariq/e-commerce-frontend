@@ -25,10 +25,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/users/login', { email, password });
       setUser(response.data.user);
-      // ✅ No toast notification
       return response.data;
     } catch (error) {
-      // ✅ No toast notification
       throw error;
     }
   };
@@ -37,10 +35,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/users/register', { name, email, password });
       setUser(response.data.user);
-      // ✅ No toast notification
       return response.data;
     } catch (error) {
-      // ✅ No toast notification
       throw error;
     }
   };
@@ -49,9 +45,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post('/users/logout');
       setUser(null);
-      // ✅ No toast notification
     } catch (error) {
-      // ✅ No toast notification
+      console.error('Logout error:', error);
     }
   };
 
@@ -59,10 +54,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.put('/users/profile', data);
       setUser(response.data.user);
-      // ✅ No toast notification
       return response.data;
     } catch (error) {
-      // ✅ No toast notification
       throw error;
     }
   };
@@ -70,10 +63,8 @@ export const AuthProvider = ({ children }) => {
   const changePassword = async (data) => {
     try {
       const response = await api.put('/users/change-password', data);
-      // ✅ No toast notification
       return response.data;
     } catch (error) {
-      // ✅ No toast notification
       throw error;
     }
   };

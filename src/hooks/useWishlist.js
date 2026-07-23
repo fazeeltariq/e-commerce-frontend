@@ -1,13 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { wishlistApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export const useWishlist = () => {
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
+  // ✅ Only fetch wishlist if user is authenticated
   const { data: wishlist, isLoading } = useQuery({
     queryKey: ['wishlist'],
     queryFn: wishlistApi.getWishlist,
     staleTime: 1000 * 30,
+    enabled: isAuthenticated,  // ✅ THIS IS THE FIX
     select: (data) => data.data,
   });
 
@@ -15,10 +19,8 @@ export const useWishlist = () => {
     mutationFn: (productId) => wishlistApi.addToWishlist(productId),
     onSuccess: () => {
       queryClient.invalidateQueries(['wishlist']);
-      // ✅ No toast notification
     },
     onError: (error) => {
-      // ✅ No toast notification
       console.error('Failed to add to wishlist:', error);
     },
   });
@@ -27,7 +29,6 @@ export const useWishlist = () => {
     mutationFn: (productId) => wishlistApi.removeFromWishlist(productId),
     onSuccess: () => {
       queryClient.invalidateQueries(['wishlist']);
-      // ✅ No toast notification
     },
     onError: (error) => {
       console.error('Failed to remove from wishlist:', error);
@@ -35,7 +36,8 @@ export const useWishlist = () => {
   });
 
   const isInWishlist = (productId) => {
-    return wishlist?.products?.some(p => p._id === productId || p === productId) || false;
+    if (!wishlist?.products) return false;
+    return wishlist.products.some(p => p._id === productId || p === productId);
   };
 
   return {
