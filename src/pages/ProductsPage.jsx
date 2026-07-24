@@ -23,6 +23,7 @@ const ProductsPage = () => {
   const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   
+  // Initialize state from URL parameters
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
@@ -96,14 +97,50 @@ const ProductsPage = () => {
   const totalProducts = productsData?.totalProducts || 0;
   const totalPages = productsData?.totalPages || 1;
 
+  // Sync state with URL changes (for Navbar navigation)
+  useEffect(() => {
+    const search = searchParams.get('search') || '';
+    const category = searchParams.get('category') || '';
+    const sort = searchParams.get('sort') || '-createdAt';
+    const page = parseInt(searchParams.get('page')) || 1;
+
+    // Update state if URL changed externally (e.g., from Navbar)
+    if (search !== searchQuery) {
+      setSearchQuery(search);
+      setSearchInput(search);
+    }
+    if (category !== selectedCategory) {
+      setSelectedCategory(category);
+    }
+    if (sort !== sortBy) {
+      setSortBy(sort);
+    }
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
+  }, [searchParams, searchQuery, selectedCategory, sortBy, currentPage]);
+
+  // Update URL when state changes (for internal navigation)
   useEffect(() => {
     const params = {};
     if (searchQuery) params.search = searchQuery;
     if (selectedCategory) params.category = selectedCategory;
     if (sortBy !== '-createdAt') params.sort = sortBy;
     if (currentPage > 1) params.page = currentPage;
-    setSearchParams(params);
-  }, [searchQuery, selectedCategory, sortBy, currentPage, setSearchParams]);
+    
+    // Only update if different from current URL
+    const currentSearch = searchParams.get('search') || '';
+    const currentCategory = searchParams.get('category') || '';
+    const currentSort = searchParams.get('sort') || '-createdAt';
+    const currentPageParam = parseInt(searchParams.get('page')) || 1;
+    
+    if (searchQuery !== currentSearch || 
+        selectedCategory !== currentCategory || 
+        sortBy !== currentSort || 
+        currentPage !== currentPageParam) {
+      setSearchParams(params);
+    }
+  }, [searchQuery, selectedCategory, sortBy, currentPage, setSearchParams, searchParams]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -268,7 +305,6 @@ const ProductsPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* ✅ FIXED: Match navbar height exactly */}
         <div className="pt-14 sm:pt-16 md:pt-20">
           <div className="container-custom">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -290,12 +326,17 @@ const ProductsPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ✅ FIXED: Match navbar height - Navbar is h-14 sm:h-16 md:h-20 */}
       <div className="pt-14 sm:pt-16 md:pt-20">
         <div className="container-custom py-4 sm:py-8">
           <div className="mb-4 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-black">All Products</h1>
-            <p className="text-black/40 mt-0.5 sm:mt-1 text-sm sm:text-base">{totalProducts} products available</p>
+            <p className="text-black/40 mt-0.5 sm:mt-1 text-sm sm:text-base">
+              {totalProducts} products available
+              {searchQuery && ` for "${searchQuery}"`}
+              {selectedCategory && categories.find(c => c._id === selectedCategory) && 
+                ` in ${categories.find(c => c._id === selectedCategory).name}`
+              }
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-8">
@@ -454,7 +495,7 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* ✅ FIXED: Changed z-50 to z-[60] so it's above navbar but below search overlay */}
+      {/* Filter Sidebar */}
       <AnimatePresence>
         {isFilterOpen && (
           <motion.div
