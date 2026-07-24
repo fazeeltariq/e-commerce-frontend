@@ -16,13 +16,13 @@ import {
   ChevronDown,
   Loader2
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
-  const { totalItems: cartCount } = useCart();
-  const { totalItems: wishlistCount } = useWishlist();
+  const { totalItems: cartCount = 0 } = useCart() || {}; // Add fallback
+  const { totalItems: wishlistCount = 0 } = useWishlist() || {}; // Add fallback
   const { categories, isLoading: categoriesLoading } = useCategories();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,12 +35,14 @@ const Navbar = () => {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const profileRef = useRef(null);
   const categoriesRef = useRef(null);
+  const searchInputRef = useRef(null);
 
+  // Handle scroll with cleanup
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -68,38 +70,110 @@ const Navbar = () => {
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = originalOverflow || 'auto';
     }
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = originalOverflow || 'auto';
     };
   }, [isMenuOpen]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-    setIsProfileOpen(false);
-    setIsMenuOpen(false);
-  };
+  // Auto-focus search input when search opens
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isSearchOpen]);
 
-  const handleSearch = (e) => {
+  // Close search on escape key
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsSearchOpen(false);
+        setIsMenuOpen(false);
+        setIsProfileOpen(false);
+        setIsCategoriesOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setIsProfileOpen(false);
+      setIsMenuOpen(false);
+    }
+  }, [logout, navigate]);
+
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${searchQuery}`);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      navigate(`/products?search=${encodeURIComponent(trimmedQuery)}`);
       setIsSearchOpen(false);
       setSearchQuery('');
     }
-  };
+  }, [searchQuery, navigate]);
 
-  // Debug logging
+  const handleSearchClick = useCallback((term) => {
+    setSearchQuery(term);
+    // Create a synthetic event for the search
+    const syntheticEvent = { preventDefault: () => {} };
+    // Use setTimeout to ensure state is updated
+    setTimeout(() => {
+      handleSearch(syntheticEvent);
+    }, 0);
+  }, [handleSearch]);
+
+  // Remove debug logging in production
   useEffect(() => {
-    console.log('🔍 Navbar: categories state:', categories);
-    console.log('🔍 Navbar: categories is array?', Array.isArray(categories));
-    console.log('🔍 Navbar: categories length:', categories?.length);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Navbar: categories state:', categories);
+      console.log('🔍 Navbar: categories is array?', Array.isArray(categories));
+      console.log('🔍 Navbar: categories length:', categories?.length);
+    }
   }, [categories]);
+
+  // Memoize category items to prevent unnecessary re-renders
+  const renderCategoryItems = useCallback(() => {
+    if (categoriesLoading) {
+      return (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-black/40" />
+        </div>
+      );
+    }
+
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      return (
+        <span className="block px-4 py-2 text-sm text-black/40 text-center">
+          No categories found
+        </span>
+      );
+    }
+
+    return categories.map((category) => (
+      <Link 
+        key={category._id || category.id} // Fallback for id
+        to={`/products?category=${category._id || category.id}`}
+        onClick={() => setIsCategoriesOpen(false)}
+        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+      >
+        {category.name}
+      </Link>
+    ));
+  }, [categories, categoriesLoading]);
 
   return (
     <>
@@ -112,11 +186,18 @@ const Navbar = () => {
             ? 'bg-white/95 backdrop-blur-2xl border-b border-gray-100/20 shadow-sm' 
             : 'bg-transparent'
         }`}
+        role="navigation"
+        aria-label="Main navigation"
       >
         <div className="container-custom">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group shrink-0" onClick={() => setIsMenuOpen(false)}>
+            <Link 
+              to="/" 
+              className="flex items-center gap-1.5 sm:gap-2 group shrink-0" 
+              onClick={() => setIsMenuOpen(false)}
+              aria-label="ByteBuy Home"
+            >
               <motion.div 
                 whileHover={{ rotate: -10, scale: 1.05 }}
                 className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-black rounded-xl flex items-center justify-center"
@@ -131,11 +212,13 @@ const Navbar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-4 lg:gap-8">
-              {/* Categories Dropdown - CLICK BASED */}
+              {/* Categories Dropdown */}
               <div className="relative" ref={categoriesRef}>
                 <button 
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                  onClick={() => setIsCategoriesOpen(prev => !prev)}
                   className="flex items-center gap-1 text-sm font-medium text-black/60 hover:text-black transition-colors"
+                  aria-expanded={isCategoriesOpen}
+                  aria-haspopup="true"
                 >
                   Categories
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`} />
@@ -149,27 +232,9 @@ const Navbar = () => {
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.2 }}
                       className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2 z-[9999]"
+                      role="menu"
                     >
-                      {categoriesLoading ? (
-                        <div className="flex items-center justify-center py-4">
-                          <Loader2 className="w-5 h-5 animate-spin text-black/40" />
-                        </div>
-                      ) : categories && categories.length > 0 ? (
-                        categories.map((category) => (
-                          <Link 
-                            key={category._id}
-                            to={`/products?category=${category._id}`}
-                            onClick={() => setIsCategoriesOpen(false)}
-                            className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                          >
-                            {category.name}
-                          </Link>
-                        ))
-                      ) : (
-                        <span className="block px-4 py-2 text-sm text-black/40 text-center">
-                          No categories found
-                        </span>
-                      )}
+                      {renderCategoryItems()}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -186,7 +251,7 @@ const Navbar = () => {
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-black/60 hover:text-black transition-colors p-1.5 sm:p-2 hover:bg-gray-50 rounded-lg"
-                aria-label="Search"
+                aria-label="Search products"
               >
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -195,12 +260,12 @@ const Navbar = () => {
                 <Link 
                   to="/wishlist" 
                   className="relative p-1.5 sm:p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
-                  aria-label="Wishlist"
+                  aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ''}`}
                 >
                   <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                   {wishlistCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-medium">
-                      {wishlistCount}
+                      {wishlistCount > 99 ? '99+' : wishlistCount}
                     </span>
                   )}
                 </Link>
@@ -208,12 +273,12 @@ const Navbar = () => {
                 <Link 
                   to="/cart" 
                   className="relative p-1.5 sm:p-2 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
-                  aria-label="Cart"
+                  aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
                 >
                   <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   {cartCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-medium">
-                      {cartCount}
+                      {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
                 </Link>
@@ -221,14 +286,18 @@ const Navbar = () => {
                 {isAuthenticated ? (
                   <div className="relative" ref={profileRef}>
                     <button
-                      onClick={() => setIsProfileOpen(!isProfileOpen)}
+                      onClick={() => setIsProfileOpen(prev => !prev)}
                       className="flex items-center gap-1.5 p-1.5 text-black/60 hover:text-black transition-colors hover:bg-gray-50 rounded-lg"
-                      aria-label="Profile"
+                      aria-label="Profile menu"
+                      aria-expanded={isProfileOpen}
+                      aria-haspopup="true"
                     >
                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/5 flex items-center justify-center border border-black/10">
                         <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60" />
                       </div>
-                      <span className="text-xs sm:text-sm font-medium hidden lg:block">{user?.name?.split(' ')[0]}</span>
+                      <span className="text-xs sm:text-sm font-medium hidden lg:block">
+                        {user?.name?.split(' ')[0] || 'User'}
+                      </span>
                       <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 hidden lg:block" />
                     </button>
 
@@ -240,26 +309,42 @@ const Navbar = () => {
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.2 }}
                           className="absolute right-0 mt-2 w-56 sm:w-64 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2"
+                          role="menu"
                         >
                           <div className="px-4 py-3 border-b border-gray-100">
-                            <p className="font-medium text-black text-sm">{user?.name}</p>
-                            <p className="text-xs text-black/40">{user?.email}</p>
+                            <p className="font-medium text-black text-sm">{user?.name || 'User'}</p>
+                            <p className="text-xs text-black/40">{user?.email || ''}</p>
                             {user?.role === 'admin' && (
                               <span className="inline-block mt-1 px-2 py-0.5 bg-black/5 text-black/60 text-xs rounded-full">
                                 Admin
                               </span>
                             )}
                           </div>
-                          <Link to="/profile" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
+                          <Link 
+                            to="/profile" 
+                            className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                            onClick={() => setIsProfileOpen(false)}
+                            role="menuitem"
+                          >
                             <User className="w-4 h-4" />
                             Profile
                           </Link>
-                          <Link to="/orders" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
+                          <Link 
+                            to="/orders" 
+                            className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                            onClick={() => setIsProfileOpen(false)}
+                            role="menuitem"
+                          >
                             <ShoppingBag className="w-4 h-4" />
                             Orders
                           </Link>
                           {user?.role === 'admin' && (
-                            <Link to="/admin/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
+                            <Link 
+                              to="/admin/dashboard" 
+                              className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                              onClick={() => setIsProfileOpen(false)}
+                              role="menuitem"
+                            >
                               <User className="w-4 h-4" />
                               Dashboard
                             </Link>
@@ -268,6 +353,7 @@ const Navbar = () => {
                           <button
                             onClick={handleLogout}
                             className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors"
+                            role="menuitem"
                           >
                             <LogOut className="w-4 h-4" />
                             Logout
@@ -300,15 +386,16 @@ const Navbar = () => {
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-black/60 hover:text-black transition-colors p-2 hover:bg-gray-50 rounded-lg"
-                aria-label="Search"
+                aria-label="Search products"
               >
                 <Search className="w-5 h-5" />
               </button>
               
               <button
                 className="text-black p-2 hover:bg-gray-50 rounded-lg relative z-50"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label="Toggle menu"
+                onClick={() => setIsMenuOpen(prev => !prev)}
+                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={isMenuOpen}
               >
                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -327,17 +414,11 @@ const Navbar = () => {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-40 bg-white md:hidden"
             style={{ top: '56px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation menu"
           >
             <div className="container-custom py-6 space-y-6 overflow-y-auto h-full pb-20">
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setIsMenuOpen(false)}
-                  className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6 text-black" />
-                </button>
-              </div>
-
               <div className="space-y-6">
                 <Link 
                   to="/products" 
@@ -357,8 +438,8 @@ const Navbar = () => {
                   ) : categories && categories.length > 0 ? (
                     categories.map((category) => (
                       <Link 
-                        key={category._id}
-                        to={`/products?category=${category._id}`}
+                        key={category._id || category.id}
+                        to={`/products?category=${category._id || category.id}`}
                         className="block py-2 text-base hover:text-black transition-colors pl-2"
                         onClick={() => setIsMenuOpen(false)}
                       >
@@ -444,6 +525,9 @@ const Navbar = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-16 sm:pt-24"
             onClick={() => setIsSearchOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search dialog"
           >
             <div className="w-full max-w-3xl px-4" onClick={(e) => e.stopPropagation()}>
               <motion.div
@@ -455,16 +539,20 @@ const Navbar = () => {
                 <form onSubmit={handleSearch} className="flex items-center gap-3 sm:gap-4 border-b-2 border-black pb-3 sm:pb-4">
                   <Search className="w-5 h-5 sm:w-6 sm:h-6 text-black/40" />
                   <input
+                    ref={searchInputRef}
                     type="text"
                     placeholder="Search for products..."
                     className="flex-1 bg-transparent text-base sm:text-lg outline-none placeholder:text-black/40"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
+                    aria-label="Search input"
                   />
                   <button 
+                    type="button"
                     onClick={() => setIsSearchOpen(false)}
                     className="text-black/40 hover:text-black transition-colors p-2"
+                    aria-label="Close search"
                   >
                     <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
@@ -475,12 +563,9 @@ const Navbar = () => {
                     {['MacBook Pro', 'Sony Headphones', 'iPhone 15', 'AirPods Max', 'Samsung Galaxy'].map((term) => (
                       <button
                         key={term}
-                        onClick={() => {
-                          setSearchQuery(term);
-                          const fakeEvent = { preventDefault: () => {} };
-                          handleSearch(fakeEvent);
-                        }}
+                        onClick={() => handleSearchClick(term)}
                         className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 rounded-full text-xs sm:text-sm hover:bg-gray-100 transition-colors"
+                        type="button"
                       >
                         {term}
                       </button>
