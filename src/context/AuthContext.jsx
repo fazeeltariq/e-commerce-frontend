@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import api from "../api/axiosConfig";
 
 const AuthContext = createContext();
 
@@ -10,20 +10,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await api.get('/users/profile');
+        const response = await api.get("/users/profile");
         setUser(response.data.user);
       } catch (error) {
-        setUser(null);
+        if (error.response?.status === 401) {
+          // User is not authenticated
+          setUser(null);
+        } else {
+          // Server error, network error, etc.
+          console.error("Failed to check authentication:", error);
+        }
       } finally {
         setLoading(false);
       }
     };
+
     checkAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/users/login', { email, password });
+      const response = await api.post("/users/login", { email, password });
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -33,7 +40,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const response = await api.post('/users/register', { name, email, password });
+      const response = await api.post("/users/register", {
+        name,
+        email,
+        password,
+      });
+
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -43,16 +55,17 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/users/logout');
+      await api.post("/users/logout");
       setUser(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout failed:", error);
+      throw error;
     }
   };
 
   const updateProfile = async (data) => {
     try {
-      const response = await api.put('/users/profile', data);
+      const response = await api.put("/users/profile", data);
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -62,7 +75,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (data) => {
     try {
-      const response = await api.put('/users/change-password', data);
+      const response = await api.put("/users/change-password", data);
       return response.data;
     } catch (error) {
       throw error;
@@ -80,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         changePassword,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role === "admin",
       }}
     >
       {children}
@@ -90,8 +103,10 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 };
