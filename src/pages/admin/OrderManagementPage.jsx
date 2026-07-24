@@ -78,7 +78,7 @@ const OrderManagementPage = () => {
     const Icon = config.icon;
 
     return (
-      <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.color} border ${config.border}`}>
+      <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.color} ${config.bg} border ${config.border}`}>
         <Icon className="w-3.5 h-3.5" />
         {status}
       </span>

@@ -49,44 +49,61 @@ const ProductManagementPage = () => {
     },
   });
 
-  // Fetch categories - FIXED with better error handling and debugging
-  // Fetch categories - BACKEND RETURNS ARRAY DIRECTLY
-const { data: categories = [], isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useQuery({
-  queryKey: ['categories'],
-  queryFn: async () => {
-    try {
-      console.log('🔄 Fetching categories...');
-      const response = await categoryApi.getCategories();
-      console.log('📂 Categories response:', response);
-      
-      // Backend returns array directly: res.status(200).json(categories)
-      // So response.data is the array
-      if (Array.isArray(response.data)) {
-        return response.data;
+  // ✅ FETCH CATEGORIES - FIXED
+  const { 
+    data: categories = [], 
+    isLoading: categoriesLoading, 
+    error: categoriesError, 
+    refetch: refetchCategories 
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      try {
+        console.log('🔄 Fetching categories...');
+        const response = await categoryApi.getCategories();
+        console.log('📂 Categories API Response:', response);
+        console.log('📂 Categories Data:', response.data);
+        
+        // Backend returns array directly
+        if (Array.isArray(response.data)) {
+          console.log('✅ Categories loaded:', response.data.length);
+          return response.data;
+        }
+        
+        // Handle wrapped responses
+        if (response.data?.categories && Array.isArray(response.data.categories)) {
+          return response.data.categories;
+        }
+        
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        
+        console.warn('⚠️ Unexpected categories format:', response.data);
+        return [];
+      } catch (error) {
+        console.error('❌ Failed to fetch categories:', error);
+        console.error('Error details:', error.response?.status, error.response?.data);
+        return [];
       }
-      
-      // If for some reason it's wrapped, try to extract
-      if (response.data?.categories && Array.isArray(response.data.categories)) {
-        return response.data.categories;
-      }
-      
-      console.warn('Categories data is not an array:', response.data);
-      return [];
-    } catch (error) {
-      console.error('❌ Failed to fetch categories:', error);
-      return [];
-    }
-  },
-  retry: false,
-  // Remove staleTime or keep as is
-});
-  // Log categories whenever they change
-  useEffect(() => {
-    console.log('📂 Categories state:', categoriesData);
-  }, [categoriesData]);
+    },
+    staleTime: 1000 * 60 * 10,
+    retry: 2,
+  });
 
-  // Ensure categories is always an array
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+  // Debug logging
+  useEffect(() => {
+    console.log('📂 Categories state:', categories);
+    console.log('📂 Categories is array:', Array.isArray(categories));
+    console.log('📂 Categories length:', categories?.length);
+  }, [categories]);
+
+  if (categoriesError) {
+    console.error('❌ Categories query error:', categoriesError);
+  }
+
+  // ❌ REMOVED: const categories = Array.isArray(categoriesData) ? categoriesData : [];
+  // ✅ categories is already defined from useQuery above
 
   // Delete product mutation
   const deleteMutation = useMutation({
@@ -487,7 +504,7 @@ const { data: categories = [], isLoading: categoriesLoading, error: categoriesEr
                   )}
                 </div>
 
-                {/* Category - FIXED with refresh button */}
+                {/* Category - FIXED */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-sm font-medium text-black">
@@ -502,52 +519,55 @@ const { data: categories = [], isLoading: categoriesLoading, error: categoriesEr
                       Refresh
                     </button>
                   </div>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className={`w-full px-4 py-2.5 bg-gray-50 border ${
-                      formErrors.category ? 'border-red-500' : 'border-gray-200'
-                    } rounded-xl focus:outline-none focus:border-black transition-colors`}
-                  >
-                    <option value="">Select a category</option>
-                    {categories.length > 0 ? (
-                      categories.map((category) => (
+                  
+                  {categoriesLoading ? (
+                    <div className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-black/40 text-sm">
+                      Loading categories...
+                    </div>
+                  ) : categories.length > 0 ? (
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className={`w-full px-4 py-2.5 bg-gray-50 border ${
+                        formErrors.category ? 'border-red-500' : 'border-gray-200'
+                      } rounded-xl focus:outline-none focus:border-black transition-colors`}
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map((category) => (
                         <option key={category._id} value={category._id}>
                           {category.name}
                         </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No categories available</option>
-                    )}
-                  </select>
-                  {categories.length === 0 && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-amber-600">
-                        ⚠️ No categories found.
-                      </p>
-                      <Link 
-                        to="/admin/categories" 
-                        className="text-sm text-black underline hover:text-black/70 transition-colors"
-                      >
-                        Create one here
-                      </Link>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <div className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-black/40 text-sm">
+                        No categories available
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-amber-600 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          No categories found.
+                        </p>
+                        <Link 
+                          to="/admin/categories" 
+                          className="text-sm text-black underline hover:text-black/70 transition-colors"
+                        >
+                          Create one here
+                        </Link>
+                      </div>
                     </div>
                   )}
+                  
                   {formErrors.category && (
                     <p className="text-sm text-red-600 mt-1">{formErrors.category}</p>
                   )}
                   
                   {/* Debug info */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-2 p-2 bg-gray-100 rounded-lg text-xs text-black/40">
-                      Categories loaded: {categories.length}
-                      {categories.length > 0 && (
-                        <span className="ml-2">
-                          ({categories.map(c => c.name).join(', ')})
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div className="mt-2 p-2 bg-gray-100 rounded-lg text-xs text-black/40">
+                    Debug: {categories.length} categories loaded
+                    {categories.length > 0 && ` (${categories.map(c => c.name).join(', ')})`}
+                  </div>
                 </div>
 
                 {/* Images */}

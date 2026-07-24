@@ -104,6 +104,7 @@ const CheckoutPage = () => {
             </Link>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -146,6 +147,7 @@ const CheckoutPage = () => {
             </div>
           </motion.div>
         </div>
+        <Footer />
       </div>
     );
   }

@@ -72,7 +72,7 @@ const Navbar = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/products?search=${searchQuery}`);
       setIsSearchOpen(false);
       setSearchQuery('');
     }
@@ -432,9 +432,8 @@ const Navbar = () => {
                       <button
                         key={term}
                         onClick={() => {
-                          navigate(`/products?search=${encodeURIComponent(term)}`);
-                          setIsSearchOpen(false);
-                          setSearchQuery('');
+                          setSearchQuery(term);
+                          handleSearch(new Event('submit'));
                         }}
                         className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 rounded-full text-xs sm:text-sm hover:bg-gray-100 transition-colors"
                       >

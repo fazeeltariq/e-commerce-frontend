@@ -31,40 +31,46 @@ const ProductsPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const itemsPerPage = 9;
 
-  // FIX: Ensure categories is always an array
-  // Fetch categories - BACKEND RETURNS ARRAY DIRECTLY
-const { data: categories = [] } = useQuery({
-  queryKey: ['categories'],
-  queryFn: async () => {
-    try {
-      const response = await categoryApi.getCategories();
-      console.log('📂 Categories response:', response);
-      
-      // Backend returns array directly: res.status(200).json(categories)
-      // So response.data is the array
-      if (Array.isArray(response.data)) {
-        return response.data;
+  // ✅ Fetch categories
+  const { data: categories = [], error: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      try {
+        const response = await categoryApi.getCategories();
+        console.log('📂 Categories raw response:', response);
+        console.log('📂 Categories response.data:', response.data);
+        
+        if (Array.isArray(response.data)) {
+          console.log('✅ Categories is an array:', response.data.length, 'items');
+          return response.data;
+        }
+        
+        if (response.data?.categories && Array.isArray(response.data.categories)) {
+          return response.data.categories;
+        }
+        
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        
+        console.warn('⚠️ Unexpected categories format:', response.data);
+        return [];
+      } catch (err) {
+        console.error('❌ Failed to fetch categories:', err);
+        console.error('Error details:', err.response?.status, err.response?.data);
+        return [];
       }
-      
-      // If for some reason it's wrapped, try to extract
-      if (response.data?.categories && Array.isArray(response.data.categories)) {
-        return response.data.categories;
-      }
-      
-      console.warn('Categories data is not an array:', response.data);
-      return [];
-    } catch (err) {
-      console.error('❌ Failed to fetch categories:', err);
-      return [];
-    }
-  },
-  retry: (failureCount, error) => {
-    if (error?.response?.status === 401) return false;
-    return failureCount < 2;
-  },
-});
-  // Ensure categories is always an array
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+    },
+    staleTime: 1000 * 60 * 10,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
+  });
+
+  if (categoriesError) {
+    console.error('❌ Categories query error:', categoriesError);
+  }
 
   const { data: productsData, isLoading, refetch } = useQuery({
     queryKey: ['products', searchQuery, selectedCategory, sortBy, currentPage],
@@ -126,7 +132,6 @@ const { data: categories = [] } = useQuery({
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
-      // Optionally redirect to login or show a message
       return;
     }
     try {
@@ -144,7 +149,6 @@ const { data: categories = [] } = useQuery({
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
-      // Optionally redirect to login or show a message
       return;
     }
     try {
@@ -355,7 +359,7 @@ const { data: categories = [] } = useQuery({
             </div>
           </div>
 
-          {/* FIX: Added conditional check and safe mapping */}
+          {/* Category Filters */}
           {categories && categories.length > 0 && (
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-8">
               <button
@@ -489,7 +493,6 @@ const { data: categories = [] } = useQuery({
                     >
                       All
                     </button>
-                    {/* FIX: Added safe mapping with Array.isArray check */}
                     {Array.isArray(categories) && categories.map((category) => (
                       <button
                         key={category._id}
