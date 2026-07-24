@@ -31,7 +31,7 @@ const ProductsPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const itemsPerPage = 9;
 
-  // ✅ Fetch categories
+  // Fetch categories
   const { data: categories = [], error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -268,17 +268,20 @@ const ProductsPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="container-custom pt-20 sm:pt-32">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[4/3] bg-gray-200 rounded-2xl" />
-                <div className="h-4 sm:h-5 bg-gray-200 rounded mt-2 sm:mt-3 w-3/4" />
-                <div className="h-3 sm:h-4 bg-gray-200 rounded mt-1.5 sm:mt-2 w-1/4" />
-                <div className="h-5 sm:h-6 bg-gray-200 rounded mt-2 sm:mt-3 w-1/3" />
-                <div className="h-8 sm:h-10 bg-gray-200 rounded mt-3 sm:mt-4 w-full" />
-              </div>
-            ))}
+        {/* ✅ FIXED: Match navbar height exactly */}
+        <div className="pt-14 sm:pt-16 md:pt-20">
+          <div className="container-custom">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[4/3] bg-gray-200 rounded-2xl" />
+                  <div className="h-4 sm:h-5 bg-gray-200 rounded mt-2 sm:mt-3 w-3/4" />
+                  <div className="h-3 sm:h-4 bg-gray-200 rounded mt-1.5 sm:mt-2 w-1/4" />
+                  <div className="h-5 sm:h-6 bg-gray-200 rounded mt-2 sm:mt-3 w-1/3" />
+                  <div className="h-8 sm:h-10 bg-gray-200 rounded mt-3 sm:mt-4 w-full" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -287,7 +290,8 @@ const ProductsPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="pt-16 sm:pt-20">
+      {/* ✅ FIXED: Match navbar height - Navbar is h-14 sm:h-16 md:h-20 */}
+      <div className="pt-14 sm:pt-16 md:pt-20">
         <div className="container-custom py-4 sm:py-8">
           <div className="mb-4 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-black">All Products</h1>
@@ -450,13 +454,14 @@ const ProductsPage = () => {
         </div>
       </div>
 
+      {/* ✅ FIXED: Changed z-50 to z-[60] so it's above navbar but below search overlay */}
       <AnimatePresence>
         {isFilterOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50"
+            className="fixed inset-0 z-[60] bg-black/50"
             onClick={() => setIsFilterOpen(false)}
           >
             <motion.div
