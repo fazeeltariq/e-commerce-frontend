@@ -78,21 +78,37 @@ const HomePage = () => {
   });
 
   // Fetch categories
-  const { data: categories } = useQuery({
-    queryKey: ['home-categories'],
-    queryFn: async () => {
-      try {
-        const response = await categoryApi.getCategories();
-        return response.data || [];
-      } catch (err) {
-        return [];
+  const { data: categoriesData = [] } = useQuery({
+  queryKey: ['home-categories'],
+  queryFn: async () => {
+    try {
+      const response = await categoryApi.getCategories();
+
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
-    },
-    retry: (failureCount, error) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 2;
-    },
-  });
+
+      if (response.data?.categories && Array.isArray(response.data.categories)) {
+        return response.data.categories;
+      }
+
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+
+      return [];
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      return [];
+    }
+  },
+  retry: (failureCount, error) => {
+    if (error?.response?.status === 401) return false;
+    return failureCount < 2;
+  },
+});
+
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
 
   const handleWishlist = (productId) => {
     if (!isAuthenticated) return;
@@ -241,12 +257,12 @@ const HomePage = () => {
             <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3">
               {categories.map((category) => (
                 <Link
-                  key={category._id}
-                  to={`/categories/${category._id}`}
-                  className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gray-50 rounded-full text-xs sm:text-sm text-black/60 hover:bg-black hover:text-white transition-all duration-300 whitespace-nowrap"
-                >
-                  {category.name}
-                </Link>
+  key={category._id}
+  to={`/products?category=${category._id}`}
+  className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gray-50 rounded-full text-xs sm:text-sm text-black/60 hover:bg-black hover:text-white transition-all duration-300 whitespace-nowrap"
+>
+  {category.name}
+</Link>
               ))}
             </div>
           </div>
