@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productApi, categoryApi } from '../api';
@@ -22,6 +22,10 @@ const ProductsPage = () => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Use ref to track if we're updating from URL to prevent loops
+  const isUpdatingFromURL = useRef(false);
+  const isInternalUpdate = useRef(false);
   
   // Initialize state from URL parameters
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
@@ -97,48 +101,78 @@ const ProductsPage = () => {
   const totalProducts = productsData?.totalProducts || 0;
   const totalPages = productsData?.totalPages || 1;
 
-  // Sync state with URL changes (for Navbar navigation)
+  // Sync state with URL changes (for Navbar navigation) - ONLY when URL changes externally
   useEffect(() => {
+    // Skip if we're in the middle of an internal update
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
     const sort = searchParams.get('sort') || '-createdAt';
     const page = parseInt(searchParams.get('page')) || 1;
 
-    // Update state if URL changed externally (e.g., from Navbar)
-    if (search !== searchQuery) {
-      setSearchQuery(search);
-      setSearchInput(search);
-    }
-    if (category !== selectedCategory) {
-      setSelectedCategory(category);
-    }
-    if (sort !== sortBy) {
-      setSortBy(sort);
-    }
-    if (page !== currentPage) {
-      setCurrentPage(page);
+    // Check if anything actually changed
+    const searchChanged = search !== searchQuery;
+    const categoryChanged = category !== selectedCategory;
+    const sortChanged = sort !== sortBy;
+    const pageChanged = page !== currentPage;
+
+    if (searchChanged || categoryChanged || sortChanged || pageChanged) {
+      isUpdatingFromURL.current = true;
+      
+      if (searchChanged) {
+        setSearchQuery(search);
+        setSearchInput(search);
+      }
+      if (categoryChanged) {
+        setSelectedCategory(category);
+      }
+      if (sortChanged) {
+        setSortBy(sort);
+      }
+      if (pageChanged) {
+        setCurrentPage(page);
+      }
+      
+      // Reset the flag after state updates
+      setTimeout(() => {
+        isUpdatingFromURL.current = false;
+      }, 0);
     }
   }, [searchParams, searchQuery, selectedCategory, sortBy, currentPage]);
 
   // Update URL when state changes (for internal navigation)
   useEffect(() => {
+    // Skip if we're updating from URL to prevent loops
+    if (isUpdatingFromURL.current) {
+      return;
+    }
+
     const params = {};
     if (searchQuery) params.search = searchQuery;
     if (selectedCategory) params.category = selectedCategory;
     if (sortBy !== '-createdAt') params.sort = sortBy;
     if (currentPage > 1) params.page = currentPage;
     
-    // Only update if different from current URL
+    // Check if URL needs updating
     const currentSearch = searchParams.get('search') || '';
     const currentCategory = searchParams.get('category') || '';
     const currentSort = searchParams.get('sort') || '-createdAt';
     const currentPageParam = parseInt(searchParams.get('page')) || 1;
     
-    if (searchQuery !== currentSearch || 
-        selectedCategory !== currentCategory || 
-        sortBy !== currentSort || 
-        currentPage !== currentPageParam) {
-      setSearchParams(params);
+    const needsUpdate = 
+      searchQuery !== currentSearch || 
+      selectedCategory !== currentCategory || 
+      sortBy !== currentSort || 
+      currentPage !== currentPageParam;
+    
+    if (needsUpdate) {
+      isInternalUpdate.current = true;
+      // Use replace to avoid adding to history stack
+      setSearchParams(params, { replace: true });
     }
   }, [searchQuery, selectedCategory, sortBy, currentPage, setSearchParams, searchParams]);
 
