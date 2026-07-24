@@ -32,40 +32,37 @@ const ProductsPage = () => {
   const itemsPerPage = 9;
 
   // FIX: Ensure categories is always an array
-  const { data: categoriesData } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      try {
-        const response = await categoryApi.getCategories();
-        // Check if response.data is an array, if not, try to extract it
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (response.data && typeof response.data === 'object') {
-          // If it's an object with a categories property
-          if (Array.isArray(response.data.categories)) {
-            return response.data.categories;
-          }
-          // If it's an object with a data property
-          if (Array.isArray(response.data.data)) {
-            return response.data.data;
-          }
-          // If it's an object with other structure, try to find the first array
-          const firstArray = Object.values(response.data).find(val => Array.isArray(val));
-          if (firstArray) {
-            return firstArray;
-          }
-          // If no array found, return empty array
-          console.warn('Categories data is not an array:', response.data);
-          return [];
-        }
-        return [];
-      } catch (err) {
-        console.error('❌ Failed to fetch categories:', err);
-        return [];
+  // Fetch categories - BACKEND RETURNS ARRAY DIRECTLY
+const { data: categories = [] } = useQuery({
+  queryKey: ['categories'],
+  queryFn: async () => {
+    try {
+      const response = await categoryApi.getCategories();
+      console.log('📂 Categories response:', response);
+      
+      // Backend returns array directly: res.status(200).json(categories)
+      // So response.data is the array
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
-    },
-  });
-
+      
+      // If for some reason it's wrapped, try to extract
+      if (response.data?.categories && Array.isArray(response.data.categories)) {
+        return response.data.categories;
+      }
+      
+      console.warn('Categories data is not an array:', response.data);
+      return [];
+    } catch (err) {
+      console.error('❌ Failed to fetch categories:', err);
+      return [];
+    }
+  },
+  retry: (failureCount, error) => {
+    if (error?.response?.status === 401) return false;
+    return failureCount < 2;
+  },
+});
   // Ensure categories is always an array
   const categories = Array.isArray(categoriesData) ? categoriesData : [];
 

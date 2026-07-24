@@ -50,29 +50,36 @@ const ProductManagementPage = () => {
   });
 
   // Fetch categories - FIXED with better error handling and debugging
-  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      try {
-        console.log('🔄 Fetching categories...');
-        const response = await categoryApi.getCategories();
-        console.log('📂 Categories API Response:', response);
-        console.log('📂 Categories Data:', response.data);
-        
-        // Ensure we return an array
-        if (Array.isArray(response.data)) {
-          return response.data;
-        }
-        return [];
-      } catch (error) {
-        console.error('❌ Failed to fetch categories:', error);
-        return [];
+  // Fetch categories - BACKEND RETURNS ARRAY DIRECTLY
+const { data: categories = [], isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useQuery({
+  queryKey: ['categories'],
+  queryFn: async () => {
+    try {
+      console.log('🔄 Fetching categories...');
+      const response = await categoryApi.getCategories();
+      console.log('📂 Categories response:', response);
+      
+      // Backend returns array directly: res.status(200).json(categories)
+      // So response.data is the array
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
-    },
-    // Don't retry on error, just show empty
-    retry: false,
-  });
-
+      
+      // If for some reason it's wrapped, try to extract
+      if (response.data?.categories && Array.isArray(response.data.categories)) {
+        return response.data.categories;
+      }
+      
+      console.warn('Categories data is not an array:', response.data);
+      return [];
+    } catch (error) {
+      console.error('❌ Failed to fetch categories:', error);
+      return [];
+    }
+  },
+  retry: false,
+  // Remove staleTime or keep as is
+});
   // Log categories whenever they change
   useEffect(() => {
     console.log('📂 Categories state:', categoriesData);
