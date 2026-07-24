@@ -13,7 +13,8 @@ import {
   Menu, 
   X, 
   Search,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +23,7 @@ const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { totalItems: cartCount } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
-  const { categories } = useCategories();
+  const { categories, isLoading: categoriesLoading } = useCategories();
   const navigate = useNavigate();
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -50,7 +51,7 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ✅ Lock body scroll when mobile menu is open
+  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -77,6 +78,13 @@ const Navbar = () => {
       setSearchQuery('');
     }
   };
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Navbar: categories state:', categories);
+    console.log('🔍 Navbar: categories is array?', Array.isArray(categories));
+    console.log('🔍 Navbar: categories length:', categories?.length);
+  }, [categories]);
 
   return (
     <>
@@ -115,7 +123,11 @@ const Navbar = () => {
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2 invisible group-hover:visible transition-all duration-200 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
-                  {categories && categories.length > 0 ? (
+                  {categoriesLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
+                    </div>
+                  ) : categories && categories.length > 0 ? (
                     categories.map((category) => (
                       <Link 
                         key={category._id}
@@ -126,8 +138,8 @@ const Navbar = () => {
                       </Link>
                     ))
                   ) : (
-                    <span className="block px-4 py-2 text-sm text-black/40">
-                      No categories
+                    <span className="block px-4 py-2 text-sm text-black/40 text-center">
+                      No categories found
                     </span>
                   )}
                 </div>
@@ -275,7 +287,7 @@ const Navbar = () => {
         </div>
       </motion.nav>
 
-      {/* ✅ Mobile Menu Overlay - Full screen */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -307,10 +319,15 @@ const Navbar = () => {
                   Products
                 </Link>
                 
-                {/* Categories */}
+                {/* Categories - Mobile */}
                 <div className="space-y-2">
                   <p className="text-sm text-black/40 font-medium">Categories</p>
-                  {categories && categories.length > 0 ? (
+                  {categoriesLoading ? (
+                    <div className="flex items-center gap-2 py-2 pl-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-black/40" />
+                      <span className="text-sm text-black/40">Loading categories...</span>
+                    </div>
+                  ) : categories && categories.length > 0 ? (
                     categories.map((category) => (
                       <Link 
                         key={category._id}
@@ -322,7 +339,7 @@ const Navbar = () => {
                       </Link>
                     ))
                   ) : (
-                    <p className="text-sm text-black/40 pl-2">No categories</p>
+                    <p className="text-sm text-black/40 pl-2">No categories found</p>
                   )}
                 </div>
               </div>
@@ -433,7 +450,8 @@ const Navbar = () => {
                         key={term}
                         onClick={() => {
                           setSearchQuery(term);
-                          handleSearch(new Event('submit'));
+                          const fakeEvent = { preventDefault: () => {} };
+                          handleSearch(fakeEvent);
                         }}
                         className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 rounded-full text-xs sm:text-sm hover:bg-gray-100 transition-colors"
                       >
