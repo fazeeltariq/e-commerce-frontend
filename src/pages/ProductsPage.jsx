@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productApi, categoryApi } from '../api';
@@ -23,18 +23,23 @@ const ProductsPage = () => {
   const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Use ref to track if we're updating from URL to prevent loops
-  const isUpdatingFromURL = useRef(false);
-  const isInternalUpdate = useRef(false);
+  // Get initial values from URL
+  const initialSearch = searchParams.get('search') || '';
+  const initialCategory = searchParams.get('category') || '';
+  const initialSort = searchParams.get('sort') || '-createdAt';
+  const initialPage = parseInt(searchParams.get('page')) || 1;
   
-  // Initialize state from URL parameters
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || '-createdAt');
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
+  // State
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [sortBy, setSortBy] = useState(initialSort);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const itemsPerPage = 9;
+  
+  // Ref to track if we're updating from URL
+  const isUpdatingFromURL = useRef(false);
 
   // Fetch categories
   const { data: categories = [], error: categoriesError } = useQuery({
@@ -101,20 +106,49 @@ const ProductsPage = () => {
   const totalProducts = productsData?.totalProducts || 0;
   const totalPages = productsData?.totalPages || 1;
 
-  // Sync state with URL changes (for Navbar navigation) - ONLY when URL changes externally
-  useEffect(() => {
-    // Skip if we're in the middle of an internal update
-    if (isInternalUpdate.current) {
-      isInternalUpdate.current = false;
+  // Update URL when state changes
+  const updateURL = useCallback(() => {
+    if (isUpdatingFromURL.current) {
+      isUpdatingFromURL.current = false;
       return;
     }
 
+    const params = {};
+    if (searchQuery) params.search = searchQuery;
+    if (selectedCategory) params.category = selectedCategory;
+    if (sortBy !== '-createdAt') params.sort = sortBy;
+    if (currentPage > 1) params.page = currentPage;
+    
+    // Check if we need to update
+    const currentSearch = searchParams.get('search') || '';
+    const currentCategory = searchParams.get('category') || '';
+    const currentSort = searchParams.get('sort') || '-createdAt';
+    const currentPageParam = parseInt(searchParams.get('page')) || 1;
+    
+    const needsUpdate = 
+      searchQuery !== currentSearch || 
+      selectedCategory !== currentCategory || 
+      sortBy !== currentSort || 
+      currentPage !== currentPageParam;
+    
+    if (needsUpdate) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchQuery, selectedCategory, sortBy, currentPage, searchParams, setSearchParams]);
+
+  // Update URL when state changes
+  useEffect(() => {
+    updateURL();
+  }, [updateURL]);
+
+  // Listen for URL changes from Navbar
+  useEffect(() => {
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
     const sort = searchParams.get('sort') || '-createdAt';
     const page = parseInt(searchParams.get('page')) || 1;
 
-    // Check if anything actually changed
+    // Check if URL changed externally
     const searchChanged = search !== searchQuery;
     const categoryChanged = category !== selectedCategory;
     const sortChanged = sort !== sortBy;
@@ -136,45 +170,8 @@ const ProductsPage = () => {
       if (pageChanged) {
         setCurrentPage(page);
       }
-      
-      // Reset the flag after state updates
-      setTimeout(() => {
-        isUpdatingFromURL.current = false;
-      }, 0);
     }
   }, [searchParams, searchQuery, selectedCategory, sortBy, currentPage]);
-
-  // Update URL when state changes (for internal navigation)
-  useEffect(() => {
-    // Skip if we're updating from URL to prevent loops
-    if (isUpdatingFromURL.current) {
-      return;
-    }
-
-    const params = {};
-    if (searchQuery) params.search = searchQuery;
-    if (selectedCategory) params.category = selectedCategory;
-    if (sortBy !== '-createdAt') params.sort = sortBy;
-    if (currentPage > 1) params.page = currentPage;
-    
-    // Check if URL needs updating
-    const currentSearch = searchParams.get('search') || '';
-    const currentCategory = searchParams.get('category') || '';
-    const currentSort = searchParams.get('sort') || '-createdAt';
-    const currentPageParam = parseInt(searchParams.get('page')) || 1;
-    
-    const needsUpdate = 
-      searchQuery !== currentSearch || 
-      selectedCategory !== currentCategory || 
-      sortBy !== currentSort || 
-      currentPage !== currentPageParam;
-    
-    if (needsUpdate) {
-      isInternalUpdate.current = true;
-      // Use replace to avoid adding to history stack
-      setSearchParams(params, { replace: true });
-    }
-  }, [searchQuery, selectedCategory, sortBy, currentPage, setSearchParams, searchParams]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
