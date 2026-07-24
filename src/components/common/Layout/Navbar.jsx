@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../hooks/useCart';
 import { useWishlist } from '../../../hooks/useWishlist';
@@ -25,13 +25,16 @@ const Navbar = () => {
   const { totalItems: wishlistCount } = useWishlist();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const profileRef = useRef(null);
+  const categoriesRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,10 +44,22 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close categories dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
+        setIsCategoriesOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -92,7 +107,7 @@ const Navbar = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-[9999] transition-all duration-500 ${
           isScrolled 
             ? 'bg-white/95 backdrop-blur-2xl border-b border-gray-100/20 shadow-sm' 
             : 'bg-transparent'
@@ -116,33 +131,48 @@ const Navbar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-4 lg:gap-8">
-              {/* Categories Dropdown */}
-              <div className="relative group">
-                <button className="flex items-center gap-1 text-sm font-medium text-black/60 hover:text-black transition-colors">
+              {/* Categories Dropdown - CLICK BASED */}
+              <div className="relative" ref={categoriesRef}>
+                <button 
+                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                  className="flex items-center gap-1 text-sm font-medium text-black/60 hover:text-black transition-colors"
+                >
                   Categories
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2 invisible group-hover:visible transition-all duration-200 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
-                  {categoriesLoading ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
-                    </div>
-                  ) : categories && categories.length > 0 ? (
-                    categories.map((category) => (
-                      <Link 
-                        key={category._id}
-                        to={`/products?category=${category._id}`}
-                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      >
-                        {category.name}
-                      </Link>
-                    ))
-                  ) : (
-                    <span className="block px-4 py-2 text-sm text-black/40 text-center">
-                      No categories found
-                    </span>
+                
+                <AnimatePresence>
+                  {isCategoriesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100/20 py-2 z-[9999]"
+                    >
+                      {categoriesLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-5 h-5 animate-spin text-black/40" />
+                        </div>
+                      ) : categories && categories.length > 0 ? (
+                        categories.map((category) => (
+                          <Link 
+                            key={category._id}
+                            to={`/products?category=${category._id}`}
+                            onClick={() => setIsCategoriesOpen(false)}
+                            className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                          >
+                            {category.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <span className="block px-4 py-2 text-sm text-black/40 text-center">
+                          No categories found
+                        </span>
+                      )}
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
 
               <Link 
@@ -299,7 +329,6 @@ const Navbar = () => {
             style={{ top: '56px' }}
           >
             <div className="container-custom py-6 space-y-6 overflow-y-auto h-full pb-20">
-              {/* Close button at top of menu */}
               <div className="flex justify-end">
                 <button
                   onClick={() => setIsMenuOpen(false)}
@@ -309,7 +338,6 @@ const Navbar = () => {
                 </button>
               </div>
 
-              {/* Navigation Links */}
               <div className="space-y-6">
                 <Link 
                   to="/products" 
@@ -319,7 +347,6 @@ const Navbar = () => {
                   Products
                 </Link>
                 
-                {/* Categories - Mobile */}
                 <div className="space-y-2">
                   <p className="text-sm text-black/40 font-medium">Categories</p>
                   {categoriesLoading ? (
@@ -415,7 +442,7 @@ const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-16 sm:pt-24"
+            className="fixed inset-0 z-[9999] bg-white/95 backdrop-blur-2xl flex items-start justify-center pt-16 sm:pt-24"
             onClick={() => setIsSearchOpen(false)}
           >
             <div className="w-full max-w-3xl px-4" onClick={(e) => e.stopPropagation()}>
