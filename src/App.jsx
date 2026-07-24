@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { QueryProvider } from './context/QueryProvider';
 import router from './Router';
@@ -8,7 +9,9 @@ function App() {
   return (
     <QueryProvider>
       <AuthProvider>
-        {/* ✅ Remove Toaster completely */}
+        {/* Toaster is required for toast.success/toast.error calls used in
+            ProductDetailPage and CartPage to actually render on screen. */}
+        <Toaster position="top-right" />
         <RouterProvider router={router} />
       </AuthProvider>
     </QueryProvider>

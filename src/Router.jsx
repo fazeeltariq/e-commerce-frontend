@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -17,6 +17,26 @@ import OrderManagementPage from './pages/admin/OrderManagementPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Layout from './components/common/Layout/Layout';
 
+// Minimal fallback for unmatched routes (e.g. /categories, /forgot-password
+// links that don't have a page yet). Without this, React Router renders its
+// raw unstyled error screen instead of something consistent with the app.
+const NotFoundPage = () => (
+  <div className="min-h-screen bg-white">
+    <div className="container-custom pt-32">
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold text-black">Page Not Found</h2>
+        <p className="text-black/40 mt-2">The page you're looking for doesn't exist.</p>
+        <Link
+          to="/"
+          className="inline-block mt-6 px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-black/80 transition-colors"
+        >
+          Back to Home
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
 const router = createBrowserRouter([
   { path: '/', element: <Layout><HomePage /></Layout> },
   { path: '/login', element: <Layout><LoginPage /></Layout> },
@@ -33,6 +53,7 @@ const router = createBrowserRouter([
   { path: '/admin/products', element: <Layout><ProtectedRoute adminOnly><ProductManagementPage /></ProtectedRoute></Layout> },
   { path: '/admin/categories', element: <Layout><ProtectedRoute adminOnly><CategoryManagementPage /></ProtectedRoute></Layout> },
   { path: '/admin/orders', element: <Layout><ProtectedRoute adminOnly><OrderManagementPage /></ProtectedRoute></Layout> },
+  { path: '*', element: <Layout><NotFoundPage /></Layout> },
 ]);
 
 export default router;

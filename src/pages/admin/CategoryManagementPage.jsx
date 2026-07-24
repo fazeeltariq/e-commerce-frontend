@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoryApi } from '../../api';
-import Footer from '../../components/common/Layout/Footer';
 import { 
   Plus, 
   Edit, 
@@ -158,7 +157,6 @@ const CategoryManagementPage = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -374,8 +372,6 @@ const CategoryManagementPage = () => {
           </div>
         )}
       </AnimatePresence>
-
-      <Footer />
     </div>
   );
 };
